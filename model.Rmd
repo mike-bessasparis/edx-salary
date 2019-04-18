@@ -1,0 +1,60 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+library(caret)
+
+c_names <- c("age", "workclass", "fnlwgt", "education", "education-num",
+           "marital-status", "occupation", "relationship", "race", "sex", "capital-gain",
+           "capital-loss", "hours-per-week", "native-country", "salary")
+
+mjb <- read.csv(file = "./data/adult.data", header = FALSE, col.names = c_names)
+
+# remove leading space in salary factor
+mjb <- mjb %>% 
+        mutate(salary = factor(if_else(salary == " <=50K", "<=50K", ">50K")))
+
+rm(c_names)
+
+```
+
+Create train and test sets
+```{r}
+
+# test_set set will be 10% of data
+set.seed(1)
+test_index <- createDataPartition(y = mjb$salary, times = 1, p = 0.1, list = FALSE)
+train_set <- mjb[-test_index,]
+test_set <- mjb[test_index,]
+
+
+```
+
+
+Baseline is guessing
+```{r}
+
+preds <- sample(c("<=50K", ">50K"), nrow(test_set), replace = TRUE, prob = c(0.5, 0.5))
+preds <- factor(preds)
+
+confusionMatrix(preds, test_set$salary)
+
+
+```
+
+
+```{r}
+
+fit <- train(salary ~ sex,  
+             method = "knn", 
+             tuneGrid = data.frame(k = seq(1, 15, 2)), 
+             data = mjb)
+
+ggplot(fit)
+
+```
+

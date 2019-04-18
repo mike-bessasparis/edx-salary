@@ -1,0 +1,320 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+library(gridExtra)
+library(DataExplorer)
+library(ggridges)
+library(ggthemes)
+
+c_names <- c("age", "workclass", "fnlwgt", "education", "education-num",
+           "marital-status", "occupation", "relationship", "race", "sex", "capital-gain",
+           "capital-loss", "hours-per-week", "native-country", "salary")
+
+mjb <- read.csv(file = "./data/adult.data", header = FALSE, col.names = c_names)
+
+rm(c_names)
+
+```
+
+
+## Basics
+### Counts
+```{r}
+
+n_rows <- nrow(mjb)
+n_cols <- ncol(mjb)
+
+# get column types
+res <- lapply(mjb, class)
+res_frame <- data.frame(unlist(res)) %>% 
+        group_by(unlist.res.) %>%
+        summarise(count = n())
+
+rm(res, res_frame, n_cols, n_rows)
+                
+```
+
+
+### Structure
+```{r}
+
+str(mjb)
+
+```
+
+
+## Univariate Distribution
+### Histograms
+```{r}
+
+h1 <- ggplot(mjb, aes(x = age)) + geom_histogram(binwidth = 1, fill = "#1380A1") + theme_economist_white()
+h2 <- ggplot(mjb, aes(x = education.num)) + geom_histogram(binwidth = 1, fill = "#1380A1") + theme_economist_white()
+h3 <- ggplot(mjb, aes(x = capital.gain)) + geom_histogram(fill = "#1380A1") + theme_economist_white()
+h4 <- ggplot(mjb, aes(x = capital.loss)) + geom_histogram(fill = "#1380A1") + theme_economist_white()
+h5 <- ggplot(mjb, aes(x = hours.per.week)) + geom_histogram(binwidth = 5, fill = "#1380A1") + theme_economist_white()
+
+grid.arrange(h1, h2, h3, h4, h5)
+
+```
+
+```{r}
+
+h1 <- ggplot(mjb, aes(x = workclass)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white()
+h2 <- ggplot(mjb, aes(x = education)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white() + theme(axis.text.y = element_text(size = 8))
+h3 <- ggplot(mjb, aes(x = marital.status)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white()
+h4 <- ggplot(mjb, aes(x = occupation)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white() + theme(axis.text.y = element_text(size = 8))
+h5 <- ggplot(mjb, aes(x = relationship)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white()
+h6 <- ggplot(mjb, aes(x = race)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white()
+h7 <- ggplot(mjb, aes(x = sex)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white()
+h8 <- ggplot(mjb, aes(x = native.country)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white() + theme(axis.text.y = element_text(size = 8))
+h9 <- ggplot(mjb, aes(x = salary)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white() 
+
+
+grid.arrange(h1, h2, h3, h4)
+grid.arrange(h5, h6, h7, h9) 
+grid.arrange(h8)
+
+rm(h1, h2, h3, h4, h5, h6, h7, h8, h9)
+
+```
+
+## Bivariate
+### Response and predictor relationships
+#### Continuous Predictors
+```{r}
+
+p2 <- mjb %>% 
+        ggplot(aes(x = salary, y = age, fill = salary)) +
+                geom_boxplot() +
+                coord_flip() +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+
+p3 <- mjb %>% 
+        ggplot(aes(x = age, fill = salary)) +
+                geom_density(alpha = 0.80) +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme_economist_white()
+
+grid.arrange(p2, p3)
+
+mjb %>% group_by(salary) %>% 
+        summarise(quant = pnorm(25, mean(age), sd(age))) 
+        
+rm(p2, p3)
+
+```
+
+
+```{r}
+
+mjb %>% 
+        filter(capital.gain != 0) %>% 
+        ggplot(aes(x = salary, y = capital.gain, fill = salary)) +
+                geom_boxplot() +
+                coord_flip() +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+
+```
+
+
+```{r}
+
+mjb %>% 
+        filter(capital.loss != 0) %>% 
+        ggplot(aes(x = salary, y = capital.loss, fill = salary)) +
+                geom_boxplot() +
+                coord_flip() +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+
+```
+
+```{r}
+
+mjb %>% 
+        ggplot(aes(x = salary, y = hours.per.week, fill = salary)) +
+                geom_boxplot() +
+                coord_flip() +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+
+```
+
+#### Categorical Predictors
+```{r}
+
+mjb %>% 
+        group_by(workclass, salary) %>% 
+        summarise(count = n()) %>%
+        mutate(pct = count/sum(count)) %>%
+        ggplot(aes(x = salary, y = pct, fill = salary)) +
+                geom_col(position = "dodge", show.legend = FALSE) +
+                facet_wrap(~ workclass) +
+                scale_y_continuous(breaks = NULL) +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.5), size = 4, colour = "white") +
+                labs(title = "Workclass") +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+
+```
+```{r}
+
+mjb %>% group_by(marital.status, salary) %>% 
+        summarise(count = n()) %>%
+        mutate(pct = count/sum(count)) %>%
+        ggplot(aes(x = salary, y = pct, fill = salary)) +
+                geom_col(position = "dodge") +
+                facet_wrap(~ marital.status) +
+                scale_y_continuous(breaks = NULL) +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.5), size = 4, colour = "white") +
+                labs(title = "Marital Status") +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+```
+
+```{r}
+
+mjb %>% 
+        group_by(education, salary) %>% 
+        summarise(count = n()) %>%
+        mutate(pct = count/sum(count)) %>%
+        ggplot(aes(x = salary, y = pct, fill = salary)) +
+                geom_col(position = "dodge") +
+                facet_wrap(~ education) +
+                scale_y_continuous(breaks = NULL) +
+                geom_text(aes(label = round(pct, 2),
+                        y = pct * 0.5), size = 4, colour = "white") +
+                labs(title = "Education") +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+```
+
+
+```{r}
+
+mjb %>% 
+        group_by(occupation, salary) %>% 
+        summarise(count = n()) %>%
+        mutate(pct = count/sum(count)) %>%
+        ggplot(aes(x = salary, y = pct, fill = salary)) +
+                geom_col(position = "dodge") +
+                facet_wrap(~ occupation) +
+                scale_y_continuous(breaks = NULL) +
+                geom_text(aes(label = round(pct, 2),
+                         y = pct * 0.5), size = 4, colour = "white") +
+                labs(title = "Occupation") +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+
+```
+
+
+```{r}
+
+mjb %>% 
+        group_by(relationship, salary) %>% 
+        summarise(count = n()) %>%
+        mutate(pct = count/sum(count)) %>%
+        ggplot(aes(x = salary, y = pct, fill = salary)) +
+                geom_col(position = "dodge") +
+                facet_wrap(~ relationship) +
+                scale_y_continuous(breaks = NULL) +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.5), size = 4, colour = "white") +
+                labs(title = "Relationship") +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+
+```
+
+
+```{r}
+
+mjb %>% 
+        group_by(race, salary) %>% 
+        summarise(count = n()) %>%
+        mutate(pct = count/sum(count)) %>%
+        ggplot(aes(x = salary, y = pct, fill = salary)) +
+                geom_col(position = "dodge") +
+                facet_wrap(~ race) +
+                scale_y_continuous(breaks = NULL) +
+                geom_text(aes(label = round(pct, 2),
+                        y = pct * 0.5), size = 4, colour = "white") +
+                labs(title = "Race") +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+
+```
+
+```{r}
+
+mjb %>% 
+        group_by(sex, salary) %>% 
+        summarise(count = n()) %>%
+        mutate(pct = count/sum(count)) %>%
+        ggplot(aes(x = salary, y = pct, fill = salary)) +
+                geom_col(position = "dodge") +
+                facet_wrap(~ sex) +
+                scale_y_continuous(breaks = NULL) +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.5), size = 4, colour = "white") +
+                labs(title = "Sex") +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+
+```
+
+```{r}
+
+mjb %>% 
+        group_by(native.country, salary) %>% 
+        summarise(count = n()) %>%
+        mutate(pct = count/sum(count)) %>%
+        ggplot(aes(x = salary, y = pct, fill = salary)) +
+                scale_y_continuous(breaks = NULL) +
+                geom_col(position = "dodge") +
+                facet_wrap(~ native.country) +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.5), size = 3, colour = "white") +
+                labs(title = "Native Country") +
+                theme_economist_white() +
+                theme(strip.text.x = element_text(size = 8)) +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+
+```
+
+
+
