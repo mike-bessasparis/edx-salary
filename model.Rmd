@@ -49,12 +49,16 @@ confusionMatrix(preds, test_set$salary)
 
 ```{r}
 
-fit <- train(salary ~ sex,  
-             method = "knn", 
-             tuneGrid = data.frame(k = seq(1, 15, 2)), 
-             data = mjb)
+fit <- train(salary ~ sex + race,  
+             method = "Rborist", 
+             tuneGrid = data.frame(predFixed = 2, minNode = c(3, 50)),
+             data = train_set)
 
 ggplot(fit)
+
+preds <- predict(fit, test_set)
+
+confusionMatrix(preds, test_set$salary)
 
 ```
 
