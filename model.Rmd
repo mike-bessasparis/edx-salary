@@ -7,6 +7,7 @@ output: html_notebook
 
 library(tidyverse)
 library(caret)
+library(doParallel)
 
 c_names <- c("age", "workclass", "fnlwgt", "education", "education-num",
            "marital-status", "occupation", "relationship", "race", "sex", "capital-gain",
@@ -16,7 +17,7 @@ mjb <- read.csv(file = "./data/adult.data", header = FALSE, col.names = c_names)
 
 # remove leading space in salary factor
 mjb <- mjb %>% 
-        mutate(salary = factor(if_else(salary == " <=50K", "<=50K", ">50K")))
+        mutate(salary = factor(if_else(salary == " <=50K", "lte50K", "gt50K")))
 
 rm(c_names)
 
@@ -38,10 +39,15 @@ test_set <- mjb[test_index,]
 Baseline is guessing
 ```{r}
 
-preds <- sample(c("<=50K", ">50K"), nrow(test_set), replace = TRUE, prob = c(0.5, 0.5))
+preds <- sample(c("lte50K", "gt50K"), nrow(test_set), replace = TRUE, prob = c(0.5, 0.5))
 preds <- factor(preds)
 
-confusionMatrix(preds, test_set$salary)
+dat <- data.frame(obs = test_set$salary, pred = preds)
+
+prSummary(dat, test_set$salary)
+
+
+confusionMatrix(dat$pred, dat$obs)
 
 
 ```
@@ -49,16 +55,37 @@ confusionMatrix(preds, test_set$salary)
 
 ```{r}
 
+# setup for parallel processing 
+cores <- detectCores()
+cl <- makePSOCKcluster(cores-1)
+registerDoParallel(cl)
+
+start_rf <- Sys.time()
+
+# Set up training control
+ctrl <- trainControl(summaryFunction = twoClassSummary,	# Use AUC to pick the best model
+                     classProbs = TRUE,
+                     savePredictions = "final",
+                     allowParallel = TRUE)
+
 fit <- train(salary ~ sex + race,  
-             method = "Rborist", 
-             tuneGrid = data.frame(predFixed = 2, minNode = c(3, 50)),
+             method = "rf", 
+             metric = "ROC",
+             trControl = ctrl,
              data = train_set)
 
-ggplot(fit)
+plot(fit)
 
 preds <- predict(fit, test_set)
 
-confusionMatrix(preds, test_set$salary)
+dat <- data.frame(obs = test_set$salary, pred = preds)
+
+prSummary(dat, lev = levels(dat$obs))
+
+confusionMatrix(dat$pred, dat$obs)
+
+F_meas(dat$pred, dat$obs)
+
 
 ```
 
