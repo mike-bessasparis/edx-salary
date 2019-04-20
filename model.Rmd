@@ -55,23 +55,10 @@ confusionMatrix(dat$pred, dat$obs)
 
 ```{r}
 
-# setup for parallel processing 
-cores <- detectCores()
-cl <- makePSOCKcluster(cores-1)
-registerDoParallel(cl)
-
 start_rf <- Sys.time()
 
-# Set up training control
-ctrl <- trainControl(summaryFunction = twoClassSummary,	# Use AUC to pick the best model
-                     classProbs = TRUE,
-                     savePredictions = "final",
-                     allowParallel = TRUE)
-
-fit <- train(salary ~ sex + race,  
-             method = "rf", 
-             metric = "ROC",
-             trControl = ctrl,
+fit <- train(salary ~ .,  
+             method = "ranger", 
              data = train_set)
 
 plot(fit)
@@ -80,11 +67,7 @@ preds <- predict(fit, test_set)
 
 dat <- data.frame(obs = test_set$salary, pred = preds)
 
-prSummary(dat, lev = levels(dat$obs))
-
 confusionMatrix(dat$pred, dat$obs)
-
-F_meas(dat$pred, dat$obs)
 
 
 ```
