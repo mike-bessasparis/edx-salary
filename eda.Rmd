@@ -7,8 +7,6 @@ output: html_notebook
 
 library(tidyverse)
 library(gridExtra)
-library(DataExplorer)
-library(ggridges)
 library(ggthemes)
 
 c_names <- c("age", "workclass", "fnlwgt", "education", "education-num",
