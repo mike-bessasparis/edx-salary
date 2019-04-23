@@ -19,9 +19,46 @@ mjb <- read.csv(file = "./data/adult.data", header = FALSE, col.names = c_names)
 mjb <- mjb %>% 
         mutate(salary = factor(if_else(salary == " <=50K", "lte50K", "gt50K")))
 
+# remove unknowns
+mjb <- mjb %>% 
+        filter(workclass != " ?", 
+               occupation != " ?",
+               native.country != " ?")
+
+mjb <- mjb %>% dplyr::select(-fnlwgt)
+
 rm(c_names)
 
 ```
+
+
+Read the validation set
+```{r}
+
+c_names <- c("age", "workclass", "fnlwgt", "education", "education-num",
+           "marital-status", "occupation", "relationship", "race", "sex", "capital-gain",
+           "capital-loss", "hours-per-week", "native-country", "salary")
+
+validation_set <- read.csv(file = "./data/adult.validation", header = FALSE, col.names = c_names, skip = 1)
+
+# remove leading space in salary factor
+# remove the trailing "." found only in the adult.validation file.
+# rename factor to not include "<=" or ">"
+validation_set <- validation_set %>% 
+        mutate(salary = factor(if_else(salary == " <=50K.", "lte50K", "gt50K")))
+
+# remove unknowns
+validation_set <- validation_set %>% 
+        filter(workclass != " ?", 
+               occupation != " ?",
+               native.country != " ?")
+
+validation_set <- validation_set %>% dplyr::select(-fnlwgt)
+
+rm(c_names)
+
+```
+
 
 Create train and test sets
 ```{r}
@@ -36,18 +73,27 @@ test_set <- mjb[test_index,]
 ```
 
 
-Baseline is guessing
+Use Random Forest to identify important variables in lieu of PCA.
 ```{r}
 
-preds <- sample(c("lte50K", "gt50K"), nrow(test_set), replace = TRUE, prob = c(0.5, 0.5))
-preds <- factor(preds)
+# setup for parallel processing 
+cores <- detectCores()
+cl <- makePSOCKcluster(cores-1)
+registerDoParallel(cl)
 
-dat <- data.frame(obs = test_set$salary, pred = preds)
+start_rf <- Sys.time()
 
-prSummary(dat, test_set$salary)
+control <- trainControl(method = "cv", number = 10, p = .9)
 
+fit_rf <- train(salary ~ .,
+             method = "ranger",
+             trControl = control,
+             data = train_set,
+             importance = 'impurity')
 
-confusionMatrix(dat$pred, dat$obs)
+varImp(fit_rf)
+
+stopCluster(cl)
 
 
 ```
@@ -55,10 +101,89 @@ confusionMatrix(dat$pred, dat$obs)
 
 ```{r}
 
-start_rf <- Sys.time()
+# setup for parallel processing 
+cores <- detectCores()
+cl <- makePSOCKcluster(cores-1)
+registerDoParallel(cl)
 
-fit <- train(salary ~ .,  
-             method = "ranger", 
+start_nnet <- Sys.time()
+
+control <- trainControl(method = "cv", number = 10, p = .9, search = "random")
+
+fit_nnet <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,
+                  method = "nnet", 
+                  trControl = control,
+                  tuneLength = 30,
+                  data = train_set,
+                  allowParallel = TRUE)
+
+# plot(fit_nnet)
+# 
+# preds <- predict(fit_nnet, test_set)
+# 
+# dat <- data.frame(obs = test_set$salary, pred = preds)
+# 
+# confusionMatrix(dat$pred, dat$obs)
+
+stopCluster(cl)
+
+
+```
+
+```{r}
+
+# setup for parallel processing 
+cores <- detectCores()
+cl <- makePSOCKcluster(cores-1)
+registerDoParallel(cl)
+
+start_xgb <- Sys.time()
+
+control <- trainControl(method = "cv", number = 10, p = .9)
+
+grid <- expand.grid(nrounds = 379, max_depth = 9, eta = 0.1601659, gamma = 6.955552, 
+                    colsample_bytree = 0.5640455, min_child_weight = 0, subsample = 0.9083501)
+
+xgb_fit <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,  
+                method = "xgbTree", 
+                trControl = control,
+#                tuneGrid = grid,
+                data = train_set,
+                allowParallel = TRUE)
+
+# preds <- predict(xgb_fit, test_set)
+# 
+# dat <- data.frame(obs = test_set$salary, pred = preds)
+# 
+# confusionMatrix(dat$pred, dat$obs)
+
+stopCluster(cl)
+
+```
+
+
+```{r}
+
+preds <- predict(xgb_fit, validation_set)
+
+dat <- data.frame(obs = validation_set$salary, pred = preds)
+
+confusionMatrix(dat$pred, dat$obs)
+
+
+```
+
+
+
+```{r}
+
+start_c5 <- Sys.time()
+
+control <- trainControl(method = "cv", number = 10, p = .9)
+
+fit <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,  
+             method = "C5.0", 
+             trControl = control,
              data = train_set)
 
 plot(fit)
@@ -69,6 +194,8 @@ dat <- data.frame(obs = test_set$salary, pred = preds)
 
 confusionMatrix(dat$pred, dat$obs)
 
-
 ```
+
+
+
 
