@@ -25,6 +25,10 @@ c_names <- c("age", "workclass", "fnlwgt", "education", "education-num",
 
 mjb <- read.csv(file = "./data/adult.data", header = FALSE, col.names = c_names)
 
+# remove leading space in salary factor
+mjb <- mjb %>% 
+        mutate(salary = factor(if_else(salary == " <=50K", "lte50K", "gt50K")))
+
 rm(c_names)
 
 ```
@@ -365,6 +369,29 @@ mjb %>%
 ```{r}
 
 library(DescTools)
+library(ggplot2)
+
+
+dt <- table(mjb[, c("salary", "workclass")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "marital.status")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "occupation")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "relationship")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "race")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "sex")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "native.country")])
+chisq.test(dt)
 
 df <- mjb %>% select_if(is.factor)
 
