@@ -5,6 +5,16 @@ output: html_notebook
 
 ```{r}
 
+knitr::knit_hooks$set(inline = function(x) {
+  prettyNum(x, big.mark=",")
+})
+
+
+```
+
+
+```{r}
+
 library(tidyverse)
 library(gridExtra)
 library(ggthemes)
@@ -14,6 +24,10 @@ c_names <- c("age", "workclass", "fnlwgt", "education", "education-num",
            "capital-loss", "hours-per-week", "native-country", "salary")
 
 mjb <- read.csv(file = "./data/adult.data", header = FALSE, col.names = c_names)
+
+# remove leading space in salary factor
+mjb <- mjb %>% 
+        mutate(salary = factor(if_else(salary == " <=50K", "lte50K", "gt50K")))
 
 rm(c_names)
 
@@ -42,6 +56,26 @@ rm(res, res_frame, n_cols, n_rows)
 ```{r}
 
 str(mjb)
+
+```
+
+Distribution of the Response Variable
+```{r}
+
+mjb %>% 
+        group_by(salary) %>% 
+        summarise(count = n()) %>%
+        mutate(pct = count/sum(count)) %>%
+        ggplot(aes(x = salary, y = count, fill = salary)) +
+                geom_col(position = "dodge", show.legend = FALSE) +
+                geom_text(aes(label = round(pct, 2),
+                          y = count * 0.5), size = 4, colour = "white") +
+                labs(title = "Salary") +
+                theme_economist_white() +
+                scale_fill_manual(values = c("#990000", "#1380A1")) +
+                theme(legend.position="none")
+
+
 
 ```
 
@@ -114,8 +148,8 @@ p3 <- mjb %>%
 
 grid.arrange(p2, p3)
 
-mjb %>% group_by(salary) %>% 
-        summarise(quant = pnorm(25, mean(age), sd(age))) 
+# mjb %>% group_by(salary) %>% 
+#         summarise(quant = pnorm(20, mean(age), sd(age))) 
         
 rm(p2, p3)
 
@@ -175,8 +209,10 @@ mjb %>%
                 geom_col(position = "dodge", show.legend = FALSE) +
                 facet_wrap(~ workclass) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = round(pct, 2),
+                geom_text(aes(label = count,
                           y = pct * 0.5), size = 4, colour = "white") +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.9), size = 4, colour = "black") +
                 labs(title = "Workclass") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
@@ -193,8 +229,10 @@ mjb %>% group_by(marital.status, salary) %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ marital.status) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = round(pct, 2),
+                geom_text(aes(label = count,
                           y = pct * 0.5), size = 4, colour = "white") +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.9), size = 4, colour = "black") +
                 labs(title = "Marital Status") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
@@ -212,8 +250,10 @@ mjb %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ education) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = round(pct, 2),
+                geom_text(aes(label = count,
                         y = pct * 0.5), size = 4, colour = "white") +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.9), size = 4, colour = "black") +
                 labs(title = "Education") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
@@ -232,8 +272,10 @@ mjb %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ occupation) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = round(pct, 2),
+                geom_text(aes(label = count,
                          y = pct * 0.5), size = 4, colour = "white") +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.9), size = 4, colour = "black") +
                 labs(title = "Occupation") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
@@ -253,8 +295,10 @@ mjb %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ relationship) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = round(pct, 2),
+                geom_text(aes(label = count,
                           y = pct * 0.5), size = 4, colour = "white") +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.9), size = 4, colour = "black") +
                 labs(title = "Relationship") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
@@ -274,8 +318,10 @@ mjb %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ race) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = round(pct, 2),
+                geom_text(aes(label = count,
                         y = pct * 0.5), size = 4, colour = "white") +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.9), size = 4, colour = "black") +
                 labs(title = "Race") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
@@ -294,8 +340,10 @@ mjb %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ sex) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = round(pct, 2),
+                geom_text(aes(label = count,
                           y = pct * 0.5), size = 4, colour = "white") +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.9), size = 4, colour = "black") +
                 labs(title = "Sex") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
@@ -314,8 +362,10 @@ mjb %>%
                 scale_y_continuous(breaks = NULL) +
                 geom_col(position = "dodge") +
                 facet_wrap(~ native.country) +
-                geom_text(aes(label = round(pct, 2),
+                geom_text(aes(label = count,
                           y = pct * 0.5), size = 3, colour = "white") +
+                geom_text(aes(label = round(pct, 2),
+                          y = pct * 0.9), size = 4, colour = "black") +
                 labs(title = "Native Country") +
                 theme_economist_white() +
                 theme(strip.text.x = element_text(size = 8)) +
@@ -324,6 +374,50 @@ mjb %>%
 
 
 ```
+
+
+
+```{r}
+
+library(DescTools)
+library(ggplot2)
+
+
+dt <- table(mjb[, c("salary", "workclass")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "marital.status")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "occupation")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "relationship")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "race")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "sex")])
+chisq.test(dt)
+
+dt <- table(mjb[, c("salary", "native.country")])
+chisq.test(dt)
+
+df <- mjb %>% select_if(is.factor)
+
+m <- PairApply(df, FUN = CramerV)
+
+corrplot::corrplot(m, type = "lower", is.corr = FALSE, method = "shade",
+                   addCoef.col = "black", diag = FALSE, cl.pos = "n", tl.srt = 30)
+
+
+```
+
+
+
+
+
 
 
 
