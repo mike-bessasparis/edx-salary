@@ -3,7 +3,7 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-```{r}
+```{r echo = FALSE, message = FALSE}
 
 knitr::knit_hooks$set(inline = function(x) {
   prettyNum(x, big.mark=",")
@@ -13,7 +13,7 @@ knitr::knit_hooks$set(inline = function(x) {
 ```
 
 
-```{r}
+```{r echo = FALSE, message = FALSE, results = 'hide'}
 
 library(tidyverse)
 library(gridExtra)
@@ -32,9 +32,38 @@ mjb <- mjb %>%
 rm(c_names)
 
 ```
+## Executive Summary
+The goal of this project is to reproduce results for this data set cited in a 1996 paper, Improving the Accuracy of Naive-Bayes Classifiers: a Decision-Tree Hybrid.[^1]  A summary of the results is found in the file adult.names.
 
+The key steps are importing the data set, cleaning the data set, creating and tuning a model, and evaluating the model against an "unknown" data set.  I split the data set into a train_set and a test_set in order to avoid making any modelling decisions with the validation set.  Then model parameters are tuned and evaluated against the test_set.  Finally, the model makes predictions 
 
-## Basics
+## Methods
+The data required minimal cleaning.  I removed the observations with unknown values becuase the original folks did.
+
+I choose models because....
+
+First I build the data sets.  The data files consist of two files: adult.data and adult.validation.  I split the adult.data set into a
+train and test set.  I ignore the validation set until the final model run thru.
+
+## Results
+The original project used accuracy as evaluation function and so did I.  The original work achieved these top three results:
+
+| Original Model | Accuracy | My Model | Accuracy |
+|-------|----------|--------|----------|
+| NBTree | 85.90+-0.28 | xgbTree | kj |
+| C4.5  | 84.46+-0.30 | C5 | zz |
+| Naive-Bayes | 83.88+-0.30 | Neural Network | hg |
+
+## Conclusion
+In conclusion, 
+
+A detailed exploratory data analysis follows.
+
+## Basic Overview of Data
+I obtained the data from https://archive.ics.uci.edu/ml/datasets/census+income.  This data was oringally extracted from the 1994 census bureau database.  Original Donor to the UCI is Ronny Kohavi and Barry Becker, Data Mining and Visualization Silicon Graphics, e-mail: ronnyk@sgi.com for questions.  Extraction was done by Barry Becker from the 1994 Census database. Data first cited in: 
+
+[^1]: Kohavi, Ron, Scaling Up the Accuracy of Naive-Bayes Classifiers: a Decision-Tree Hybrid, Proceedings of the Second International Conference on Knowledge Discovery and Data Mining, 1996. http://www.aaai.org/Papers/KDD/1996/KDD96-033.pdf
+
 ### Counts
 ```{r}
 
