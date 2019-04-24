@@ -33,17 +33,14 @@ rm(c_names)
 
 ```
 ## Executive Summary
-The goal of this project is to reproduce results for this data set cited in a 1996 paper, Improving the Accuracy of Naive-Bayes Classifiers: a Decision-Tree Hybrid.[^1]  A summary of the results is found in the file adult.names.
+The goal of this project is to predict the salary given some U.S. Census data. I choos this project in order to attempt to match the prediction accuracy cited in a 1996 paper, Improving the Accuracy of Naive-Bayes Classifiers: a Decision-Tree Hybrid.[^1]  A summary of the results is found in the file adult.names.
 
-The key steps are importing the data set, cleaning the data set, creating and tuning a model, and evaluating the model against an "unknown" data set.  I split the data set into a train_set and a test_set in order to avoid making any modelling decisions with the validation set.  Then model parameters are tuned and evaluated against the test_set.  Finally, the model makes predictions 
+The key steps are importing the data set, cleaning the data set, creating and tuning a model, and evaluating the model against a validation data set. In the original data set work the authors listed the top 3 performing models: NBTree, C4.5, and Naive-Bayes.  I choose a Random Forest, Neural Net, and xgbTree.  I split the data set into a train_set and a test_set in order to avoid making any modelling decisions with the validation set. Then model parameters are tuned and evaluated against the test_set.  Finally, the models make predictions for the validation set.  
 
 ## Methods
 The data required minimal cleaning.  I removed the observations with unknown values becuase the original folks did.
 
-I choose models because....
-
-First I build the data sets.  The data files consist of two files: adult.data and adult.validation.  I split the adult.data set into a
-train and test set.  I ignore the validation set until the final model run thru.
+First I build the data sets.  The data files consist of two files: adult.data and adult.validation.  I split the adult.data set into a train and test set.  I ignore the validation set until the final model run thru.
 
 ## Results
 The original project used accuracy as evaluation function and so did I.  The original work achieved these top three results:
@@ -55,12 +52,12 @@ The original project used accuracy as evaluation function and so did I.  The ori
 | Naive-Bayes | 83.88+-0.30 | Neural Network | hg |
 
 ## Conclusion
-In conclusion, 
+In conclusion, the models I created did about as well as the original.
 
 A detailed exploratory data analysis follows.
 
 ## Basic Overview of Data
-I obtained the data from https://archive.ics.uci.edu/ml/datasets/census+income.  This data was oringally extracted from the 1994 census bureau database.  Original Donor to the UCI is Ronny Kohavi and Barry Becker, Data Mining and Visualization Silicon Graphics, e-mail: ronnyk@sgi.com for questions.  Extraction was done by Barry Becker from the 1994 Census database. Data first cited in: 
+I obtained the data from https://archive.ics.uci.edu/ml/datasets/census+income.  This data was oringally extracted from the 1994 census bureau database.  The data was originally donated to the UCI by Ronny Kohavi and Barry Becker, Data Mining and Visualization Silicon Graphics, e-mail: ronnyk@sgi.com for questions.  Extraction was done by Barry Becker from the 1994 Census database.
 
 [^1]: Kohavi, Ron, Scaling Up the Accuracy of Naive-Bayes Classifiers: a Decision-Tree Hybrid, Proceedings of the Second International Conference on Knowledge Discovery and Data Mining, 1996. http://www.aaai.org/Papers/KDD/1996/KDD96-033.pdf
 
@@ -88,7 +85,7 @@ str(mjb)
 
 ```
 
-Distribution of the Response Variable
+Distribution of the Response Variable.  We see this is a somewhat unbalanced data set.
 ```{r}
 
 mjb %>% 
@@ -111,6 +108,7 @@ mjb %>%
 
 ## Univariate Distribution
 ### Histograms
+Let's take a look at the numeric variables.  If we use AGE as a predictor we would likely center and normalize.
 ```{r}
 
 h1 <- ggplot(mjb, aes(x = age)) + geom_histogram(binwidth = 1, fill = "#1380A1") + theme_economist_white()
@@ -122,7 +120,7 @@ h5 <- ggplot(mjb, aes(x = hours.per.week)) + geom_histogram(binwidth = 5, fill =
 grid.arrange(h1, h2, h3, h4, h5)
 
 ```
-
+Next we look at the categorical data.
 ```{r}
 
 h1 <- ggplot(mjb, aes(x = workclass)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white()
@@ -144,7 +142,7 @@ rm(h1, h2, h3, h4, h5, h6, h7, h8, h9)
 
 ```
 
-Remove unknowns
+We remove those observations with an unknown value.  We could have imputed the values, perhaps considering the distribution of known values.  We did not because the original authors removed the data.
 ```{r}
 
 mjb <- mjb %>% 
@@ -158,6 +156,7 @@ mjb <- mjb %>%
 ## Bivariate
 ### Response and predictor relationships
 #### Continuous Predictors
+We see that age can predict low salary for young adults.
 ```{r}
 
 p2 <- mjb %>% 
@@ -184,7 +183,7 @@ rm(p2, p3)
 
 ```
 
-
+It appears that Capital Gain can also help predicting Salary.  Capital Loss doesn't appear as helpful.
 ```{r}
 
 mjb %>% 
@@ -195,7 +194,6 @@ mjb %>%
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
                 theme(legend.position="none")
-
 
 ```
 
@@ -228,6 +226,7 @@ mjb %>%
 ```
 
 #### Categorical Predictors
+Looking at the categorical predictors we see several that appear useful. We will want to verify our intuition by considering independence using a Chi-Square test.
 ```{r}
 
 mjb %>% 
@@ -411,25 +410,31 @@ mjb %>%
 library(DescTools)
 library(ggplot2)
 
-
+print("Workclass")
 dt <- table(mjb[, c("salary", "workclass")])
 chisq.test(dt)
 
+print("marital.status")
 dt <- table(mjb[, c("salary", "marital.status")])
 chisq.test(dt)
 
+print("occupation")
 dt <- table(mjb[, c("salary", "occupation")])
 chisq.test(dt)
 
+print("relationship")
 dt <- table(mjb[, c("salary", "relationship")])
 chisq.test(dt)
 
+print("race")
 dt <- table(mjb[, c("salary", "race")])
 chisq.test(dt)
 
+2print("sex")
 dt <- table(mjb[, c("salary", "sex")])
 chisq.test(dt)
 
+print("native.country")
 dt <- table(mjb[, c("salary", "native.country")])
 chisq.test(dt)
 
@@ -443,7 +448,9 @@ corrplot::corrplot(m, type = "lower", is.corr = FALSE, method = "shade",
 
 ```
 
+We see that `workclass`, `occupation`, and `native.country` do not get a valid Chi-Square value because several factors in each do not contain enough samples.
 
+Those that appear important to predicting salary are `education`, `marital.status`, `relationship`, and `sex`.  If we run into model performance constraints we can reduce the categorical predictors to these.
 
 
 
