@@ -61,32 +61,16 @@ I obtained the data from https://archive.ics.uci.edu/ml/datasets/census+income. 
 
 [^1]: Kohavi, Ron, Scaling Up the Accuracy of Naive-Bayes Classifiers: a Decision-Tree Hybrid, Proceedings of the Second International Conference on Knowledge Discovery and Data Mining, 1996. http://www.aaai.org/Papers/KDD/1996/KDD96-033.pdf
 
-### Counts
-```{r}
-
-n_rows <- nrow(mjb)
-n_cols <- ncol(mjb)
-
-# get column types
-res <- lapply(mjb, class)
-res_frame <- data.frame(unlist(res)) %>% 
-        group_by(unlist.res.) %>%
-        summarise(count = n())
-
-rm(res, res_frame, n_cols, n_rows)
-                
-```
-
-
+***
 ### Structure
-```{r}
+```{r echo=FALSE}
 
 str(mjb)
 
 ```
 
-Distribution of the Response Variable.  We see this is a somewhat unbalanced data set.
-```{r}
+Distribution of the response variable.  We see this is a fairly unbalanced data set.
+```{r echo=FALSE}
 
 mjb %>% 
         group_by(salary) %>% 
@@ -105,11 +89,11 @@ mjb %>%
 
 ```
 
-
+***
 ## Univariate Distribution
 ### Histograms
 Let's take a look at the numeric variables.  If we use AGE as a predictor we would likely center and normalize.
-```{r}
+```{r echo=FALSE}
 
 h1 <- ggplot(mjb, aes(x = age)) + geom_histogram(binwidth = 1, fill = "#1380A1") + theme_economist_white()
 h2 <- ggplot(mjb, aes(x = education.num)) + geom_histogram(binwidth = 1, fill = "#1380A1") + theme_economist_white()
@@ -121,7 +105,7 @@ grid.arrange(h1, h2, h3, h4, h5)
 
 ```
 Next we look at the categorical data.
-```{r}
+```{r echo=FALSE}
 
 h1 <- ggplot(mjb, aes(x = workclass)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white()
 h2 <- ggplot(mjb, aes(x = education)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white() + theme(axis.text.y = element_text(size = 8))
@@ -143,7 +127,7 @@ rm(h1, h2, h3, h4, h5, h6, h7, h8, h9)
 ```
 
 We remove those observations with an unknown value.  We could have imputed the values, perhaps considering the distribution of known values.  We did not because the original authors removed the data.
-```{r}
+```{r echo=FALSE}
 
 mjb <- mjb %>% 
         filter(workclass != " ?", 
@@ -152,12 +136,12 @@ mjb <- mjb %>%
 
 ```
 
-
+***
 ## Bivariate
 ### Response and predictor relationships
 #### Continuous Predictors
 We see that age can predict low salary for young adults.
-```{r}
+```{r echo=FALSE}
 
 p2 <- mjb %>% 
         ggplot(aes(x = salary, y = age, fill = salary)) +
@@ -183,8 +167,8 @@ rm(p2, p3)
 
 ```
 
-It appears that Capital Gain can also help predicting Salary.  Capital Loss doesn't appear as helpful.
-```{r}
+It appears that Capital Gain can also help predict salary.  Capital Loss is not as helpful.
+```{r echo=FALSE}
 
 mjb %>% 
         filter(capital.gain != 0) %>% 
@@ -198,7 +182,7 @@ mjb %>%
 ```
 
 
-```{r}
+```{r echo=FALSE}
 
 mjb %>% 
         filter(capital.loss != 0) %>% 
@@ -212,7 +196,7 @@ mjb %>%
 
 ```
 
-```{r}
+```{r echo=FALSE}
 
 mjb %>% 
         ggplot(aes(x = salary, y = hours.per.week, fill = salary)) +
@@ -225,9 +209,10 @@ mjb %>%
 
 ```
 
+***
 #### Categorical Predictors
 Looking at the categorical predictors we see several that appear useful. We will want to verify our intuition by considering independence using a Chi-Square test.
-```{r}
+```{r echo=FALSE}
 
 mjb %>% 
         group_by(workclass, salary) %>% 
@@ -237,18 +222,14 @@ mjb %>%
                 geom_col(position = "dodge", show.legend = FALSE) +
                 facet_wrap(~ workclass) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = count,
-                          y = pct * 0.5), size = 4, colour = "white") +
-                geom_text(aes(label = round(pct, 2),
-                          y = pct * 0.9), size = 4, colour = "black") +
-                labs(title = "Workclass") +
+                labs(title = "Workclass", subtitle = "Percentages") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
                 theme(legend.position="none")
 
 
 ```
-```{r}
+```{r echo=FALSE}
 
 mjb %>% group_by(marital.status, salary) %>% 
         summarise(count = n()) %>%
@@ -257,18 +238,14 @@ mjb %>% group_by(marital.status, salary) %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ marital.status) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = count,
-                          y = pct * 0.5), size = 4, colour = "white") +
-                geom_text(aes(label = round(pct, 2),
-                          y = pct * 0.9), size = 4, colour = "black") +
-                labs(title = "Marital Status") +
+                labs(title = "Marital Status", subtitle = "Percentages") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
                 theme(legend.position="none")
 
 ```
 
-```{r}
+```{r echo=FALSE}
 
 mjb %>% 
         group_by(education, salary) %>% 
@@ -278,11 +255,7 @@ mjb %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ education) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = count,
-                        y = pct * 0.5), size = 4, colour = "white") +
-                geom_text(aes(label = round(pct, 2),
-                          y = pct * 0.9), size = 4, colour = "black") +
-                labs(title = "Education") +
+                labs(title = "Education", subtitle = "Percentages") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
                 theme(legend.position="none")
@@ -290,7 +263,7 @@ mjb %>%
 ```
 
 
-```{r}
+```{r echo=FALSE}
 
 mjb %>% 
         group_by(occupation, salary) %>% 
@@ -300,11 +273,7 @@ mjb %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ occupation) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = count,
-                         y = pct * 0.5), size = 4, colour = "white") +
-                geom_text(aes(label = round(pct, 2),
-                          y = pct * 0.9), size = 4, colour = "black") +
-                labs(title = "Occupation") +
+                labs(title = "Occupation", subtitle = "Percentages") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
                 theme(legend.position="none")
@@ -313,7 +282,7 @@ mjb %>%
 ```
 
 
-```{r}
+```{r echo=FALSE}
 
 mjb %>% 
         group_by(relationship, salary) %>% 
@@ -323,11 +292,7 @@ mjb %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ relationship) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = count,
-                          y = pct * 0.5), size = 4, colour = "white") +
-                geom_text(aes(label = round(pct, 2),
-                          y = pct * 0.9), size = 4, colour = "black") +
-                labs(title = "Relationship") +
+                labs(title = "Relationship", subtitle = "Percentages") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
                 theme(legend.position="none")
@@ -336,7 +301,7 @@ mjb %>%
 ```
 
 
-```{r}
+```{r echo=FALSE}
 
 mjb %>% 
         group_by(race, salary) %>% 
@@ -346,11 +311,7 @@ mjb %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ race) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = count,
-                        y = pct * 0.5), size = 4, colour = "white") +
-                geom_text(aes(label = round(pct, 2),
-                          y = pct * 0.9), size = 4, colour = "black") +
-                labs(title = "Race") +
+                labs(title = "Race", subtitle = "Percentages") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
                 theme(legend.position="none")
@@ -358,7 +319,7 @@ mjb %>%
 
 ```
 
-```{r}
+```{r echo=FALSE}
 
 mjb %>% 
         group_by(sex, salary) %>% 
@@ -368,11 +329,7 @@ mjb %>%
                 geom_col(position = "dodge") +
                 facet_wrap(~ sex) +
                 scale_y_continuous(breaks = NULL) +
-                geom_text(aes(label = count,
-                          y = pct * 0.5), size = 4, colour = "white") +
-                geom_text(aes(label = round(pct, 2),
-                          y = pct * 0.9), size = 4, colour = "black") +
-                labs(title = "Sex") +
+                labs(title = "Sex", subtitle = "Percentages") +
                 theme_economist_white() +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
                 theme(legend.position="none")
@@ -380,7 +337,7 @@ mjb %>%
 
 ```
 
-```{r}
+```{r echo=FALSE}
 
 mjb %>% 
         group_by(native.country, salary) %>% 
@@ -390,11 +347,7 @@ mjb %>%
                 scale_y_continuous(breaks = NULL) +
                 geom_col(position = "dodge") +
                 facet_wrap(~ native.country) +
-                geom_text(aes(label = count,
-                          y = pct * 0.5), size = 3, colour = "white") +
-                geom_text(aes(label = round(pct, 2),
-                          y = pct * 0.9), size = 4, colour = "black") +
-                labs(title = "Native Country") +
+                labs(title = "Native Country", subtitle = "Percentages") +
                 theme_economist_white() +
                 theme(strip.text.x = element_text(size = 8)) +
                 scale_fill_manual(values = c("#990000", "#1380A1")) +
@@ -405,22 +358,18 @@ mjb %>%
 
 
 
-```{r}
+```{r echo=FALSE}
 
 library(DescTools)
 library(ggplot2)
 
 print("Workclass")
 dt <- table(mjb[, c("salary", "workclass")])
-chisq.test(dt)
-
-print("marital.status")
-dt <- table(mjb[, c("salary", "marital.status")])
-chisq.test(dt)
+chi <- chisq.test(dt)
 
 print("occupation")
 dt <- table(mjb[, c("salary", "occupation")])
-chisq.test(dt)
+chi <- chisq.test(dt)
 
 print("relationship")
 dt <- table(mjb[, c("salary", "relationship")])
@@ -430,7 +379,7 @@ print("race")
 dt <- table(mjb[, c("salary", "race")])
 chisq.test(dt)
 
-2print("sex")
+print("sex")
 dt <- table(mjb[, c("salary", "sex")])
 chisq.test(dt)
 
@@ -443,14 +392,15 @@ df <- mjb %>% select_if(is.factor)
 m <- PairApply(df, FUN = CramerV)
 
 corrplot::corrplot(m, type = "lower", is.corr = FALSE, method = "shade",
-                   addCoef.col = "black", diag = FALSE, cl.pos = "n", tl.srt = 30)
+                   addCoef.col = "black", diag = FALSE, cl.pos = "n", tl.srt = 30,
+                   title = "Cramers V")
 
 
 ```
 
-We see that `workclass`, `occupation`, and `native.country` do not get a valid Chi-Square value because several factors in each do not contain enough samples.
+We apply a Chi-Square test for independence for each variable with `salary`.  We calculate the Cramer's V value for each variable against `salary`.  We see that `workclass`, `occupation`, and `native.country` do not get a valid Cramer's V value since they fail to produce a correct Chi-Square test.
 
-Those that appear important to predicting salary are `education`, `marital.status`, `relationship`, and `sex`.  If we run into model performance constraints we can reduce the categorical predictors to these.
+Those variable that are important to predicting salary are `education`, `marital.status`, `relationship`, and `sex`.  If we run into model performance constraints we can reduce the categorical predictors to these.  
 
 
 
