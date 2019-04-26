@@ -73,7 +73,7 @@ test_set <- mjb[test_index,]
 ```
 
 
-Use Random Forest to identify important variables in lieu of PCA.
+Random Forest to validate important variables from EDA.
 ```{r}
 
 # setup for parallel processing 
@@ -90,6 +90,12 @@ fit_rf <- train(salary ~ .,
              trControl = control,
              data = train_set,
              importance = 'impurity')
+
+preds <- predict(fit_rf, test_set)
+
+dat <- data.frame(obs = test_set$salary, pred = preds)
+
+confusionMatrix(dat$pred, dat$obs)
 
 varImp(fit_rf)
 
@@ -117,13 +123,11 @@ fit_nnet <- train(salary ~ age + capital.gain + hours.per.week + marital.status 
                   data = train_set,
                   allowParallel = TRUE)
 
-# plot(fit_nnet)
-# 
-# preds <- predict(fit_nnet, test_set)
-# 
-# dat <- data.frame(obs = test_set$salary, pred = preds)
-# 
-# confusionMatrix(dat$pred, dat$obs)
+preds <- predict(fit_nnet, test_set)
+
+dat <- data.frame(obs = test_set$salary, pred = preds)
+
+confusionMatrix(dat$pred, dat$obs)
 
 stopCluster(cl)
 
@@ -144,34 +148,23 @@ control <- trainControl(method = "cv", number = 10, p = .9)
 grid <- expand.grid(nrounds = 379, max_depth = 9, eta = 0.1601659, gamma = 6.955552, 
                     colsample_bytree = 0.5640455, min_child_weight = 0, subsample = 0.9083501)
 
-xgb_fit <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,  
+fit_xgb <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,  
                 method = "xgbTree", 
                 trControl = control,
 #                tuneGrid = grid,
                 data = train_set,
                 allowParallel = TRUE)
 
-# preds <- predict(xgb_fit, test_set)
-# 
-# dat <- data.frame(obs = test_set$salary, pred = preds)
-# 
-# confusionMatrix(dat$pred, dat$obs)
+preds <- predict(fit_xgb, test_set)
+
+dat <- data.frame(obs = test_set$salary, pred = preds)
+
+confusionMatrix(dat$pred, dat$obs)
 
 stopCluster(cl)
 
 ```
 
-
-```{r}
-
-preds <- predict(xgb_fit, validation_set)
-
-dat <- data.frame(obs = validation_set$salary, pred = preds)
-
-confusionMatrix(dat$pred, dat$obs)
-
-
-```
 
 
 
@@ -181,14 +174,12 @@ start_c5 <- Sys.time()
 
 control <- trainControl(method = "cv", number = 10, p = .9)
 
-fit <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,  
+fit_c5 <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,  
              method = "C5.0", 
              trControl = control,
              data = train_set)
 
-plot(fit)
-
-preds <- predict(fit, test_set)
+preds <- predict(fit_c5, test_set)
 
 dat <- data.frame(obs = test_set$salary, pred = preds)
 
