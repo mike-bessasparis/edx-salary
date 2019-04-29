@@ -3,15 +3,16 @@ title: "R Notebook"
 output: html_notebook
 ---
 
+Load the training data. I also remove the variable 'fnlwgt' since I don't understand what it represents.  See the description in the file 'adult.names'.
 ```{r}
 
 library(tidyverse)
 library(caret)
 library(doParallel)
 
-c_names <- c("age", "workclass", "fnlwgt", "education", "education-num",
-           "marital-status", "occupation", "relationship", "race", "sex", "capital-gain",
-           "capital-loss", "hours-per-week", "native-country", "salary")
+c_names <- c("age", "workclass", "fnlwgt", "education", "education.num",
+           "marital.status", "occupation", "relationship", "race", "sex", "capital.gain",
+           "capital.loss", "hours.per.week", "native.country", "salary")
 
 mjb <- read.csv(file = "./data/adult.data", header = FALSE, col.names = c_names)
 
@@ -27,19 +28,13 @@ mjb <- mjb %>%
 
 mjb <- mjb %>% dplyr::select(-fnlwgt)
 
-rm(c_names)
-
 ```
 
 
-Read the validation set
+Load the validation set making the same changes as the training data.
 ```{r}
 
-c_names <- c("age", "workclass", "fnlwgt", "education", "education-num",
-           "marital-status", "occupation", "relationship", "race", "sex", "capital-gain",
-           "capital-loss", "hours-per-week", "native-country", "salary")
-
-validation_set <- read.csv(file = "./data/adult.validation", header = FALSE, col.names = c_names, skip = 1)
+validation_set <- read.csv(file = "./data/adult.validation", header = FALSE, skip = 1, col.names = c_names)
 
 # remove leading space in salary factor
 # remove the trailing "." found only in the adult.validation file.
@@ -60,7 +55,7 @@ rm(c_names)
 ```
 
 
-Create train and test sets
+Create train and test sets from the training data.
 ```{r}
 
 # test_set set will be 10% of data
@@ -91,12 +86,6 @@ fit_rf <- train(salary ~ .,
              data = train_set,
              importance = 'impurity')
 
-preds <- predict(fit_rf, test_set)
-
-dat <- data.frame(obs = test_set$salary, pred = preds)
-
-confusionMatrix(dat$pred, dat$obs)
-
 varImp(fit_rf)
 
 stopCluster(cl)
@@ -104,7 +93,7 @@ stopCluster(cl)
 
 ```
 
-
+Naive-Bayes model.
 ```{r}
 
 # setup for parallel processing 
@@ -112,18 +101,16 @@ cores <- detectCores()
 cl <- makePSOCKcluster(cores-1)
 registerDoParallel(cl)
 
-start_nnet <- Sys.time()
+start_nb <- Sys.time()
 
-control <- trainControl(method = "cv", number = 10, p = .9, search = "random")
+control <- trainControl(method = "cv", number = 10, p = .9)
 
-fit_nnet <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,
-                  method = "nnet", 
+fit_nb <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,
+                  method = "nb", 
                   trControl = control,
-                  tuneLength = 30,
-                  data = train_set,
-                  allowParallel = TRUE)
+                  data = train_set)
 
-preds <- predict(fit_nnet, test_set)
+preds <- predict(fit_nb, test_set)
 
 dat <- data.frame(obs = test_set$salary, pred = preds)
 
@@ -134,6 +121,7 @@ stopCluster(cl)
 
 ```
 
+Extreme Gradient Boosting Tree model.  The original work used a NBTree model - a tree based model using Naive-Bayes for the leaves.  I don't have access to that model so I used XGBTree instead.
 ```{r}
 
 # setup for parallel processing 
@@ -167,8 +155,13 @@ stopCluster(cl)
 
 
 
-
+C5 model.  The original work used the C4.5 model.  I used the improved model - C5.  C5 is faster and uses much less memory than C4.5.  It also includes boosting.
 ```{r}
+
+# setup for parallel processing 
+cores <- detectCores()
+cl <- makePSOCKcluster(cores-1)
+registerDoParallel(cl)
 
 start_c5 <- Sys.time()
 
@@ -185,8 +178,32 @@ dat <- data.frame(obs = test_set$salary, pred = preds)
 
 confusionMatrix(dat$pred, dat$obs)
 
+stopCluster(cl)
+
 ```
 
 
+```{r}
+
+# final predictions and accuracy using the validation set
+
+
+preds <- predict(fit_nb, validation_set)
+dat <- data.frame(obs = validation_set$salary, pred = preds)
+cm <- confusionMatrix(dat$pred, dat$obs)
+results <- data_frame(method = "Naive-Bayes", accuracy = cm$overall["Accuracy"])
+
+preds <- predict(fit_xgb, validation_set)
+dat <- data.frame(obs = validation_set$salary, pred = preds)
+cm <- confusionMatrix(dat$pred, dat$obs)
+results <- bind_rows(results, 
+                     data_frame(method = "xgbTree", accuracy = cm$overall["Accuracy"]))
+
+@results <- bind_rows(results, 
+                     data_frame(method = "C5", accuracy = cm$overall["Accuracy"]))
+
+results
+
+```
 
 

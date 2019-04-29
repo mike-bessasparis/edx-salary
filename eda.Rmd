@@ -1,6 +1,9 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Data Science: Capstone Project Report"
+output:
+  pdf_document: 
+    fig_height: 4
+  html_notebook: default
 ---
 
 ```{r echo = FALSE, message = FALSE}
@@ -33,28 +36,33 @@ rm(c_names)
 
 ```
 ## Executive Summary
-The goal of this project is to predict the salary given some U.S. Census data. I choos this project in order to attempt to match the prediction accuracy cited in a 1996 paper, Improving the Accuracy of Naive-Bayes Classifiers: a Decision-Tree Hybrid.[^1]  A summary of the results is found in the file adult.names.
+The goal of this project is to predict the salary given some U.S. Census data. I selected this project in order to attempt to match the prediction accuracy cited in a 1996 paper, Improving the Accuracy of Naive-Bayes Classifiers: a Decision-Tree Hybrid.[^1]  A summary of the results is found in the file adult.names.
 
-The key steps are importing the data set, cleaning the data set, creating and tuning a model, and evaluating the model against a validation data set. In the original data set work the authors listed the top 3 performing models: NBTree, C4.5, and Naive-Bayes.  I choose a Random Forest, Neural Net, and xgbTree.  I split the data set into a train_set and a test_set in order to avoid making any modelling decisions with the validation set. Then model parameters are tuned and evaluated against the test_set.  Finally, the models make predictions for the validation set.  
+This is a classification problem.  We don't predict the exact salary.  Rather, we predict which class (>$50,000 or <=$50,000) that each individual belongs.
+
+The key steps are importing the data set, cleaning the data set, creating and tuning a model, and evaluating the model against a validation data set. In the original data set work the authors listed the top 3 performing models: NBTree, C4.5, and Naive-Bayes.  I choose a xgbTree, Naive-Bayes, and C5.  I split the data set into a train_set and a test_set in order to avoid making any modelling decisions with the validation set. Then model parameters are tuned and evaluated against the test_set.  Finally, the models make predictions for the validation set.  
 
 ## Methods
-The data required minimal cleaning.  I removed the observations with unknown values becuase the original folks did.
+The data required minimal cleaning.  I removed the observations with unknown values because the original researchers did.
 
-First I build the data sets.  The data files consist of two files: adult.data and adult.validation.  I split the adult.data set into a train and test set.  I ignore the validation set until the final model run thru.
+First I build the data sets.  The data files consist of two files: adult.data and adult.validation.  I split the adult.data set into a train and test set.  I train three models on the training data.  When the models are built I use these models to predict the whether the salary of individuals in the validation set are greater than or less than or equal to $50,000.
 
 ## Results
-The original project used accuracy as evaluation function and so did I.  The original work achieved these top three results:
+The original project used accuracy as evaluation function and so did I.  One model, C5, out-performed the original models.  
 
 | Original Model | Accuracy | My Model | Accuracy |
 |-------|----------|--------|----------|
-| NBTree | 85.90+-0.28 | xgbTree | kj |
-| C4.5  | 84.46+-0.30 | C5 | zz |
-| Naive-Bayes | 83.88+-0.30 | Neural Network | hg |
+| NBTree | 0.8590 | xgbTree | 0.8526 |
+| C4.5  | 0.8446 | C5 | 0.8486 |
+| Naive-Bayes | 0.8388 | Naive-Bayes | 0.8092 |
+
 
 ## Conclusion
-In conclusion, the models I created did about as well as the original.
+I've learned quite a bit during this course.  I can build models that predict almost as well as others with much more experience than me.  Of course, I've only learned how to use the tools that others have built.  That counts as success for my first data science course.
 
 A detailed exploratory data analysis follows.
+
+\newpage
 
 ## Basic Overview of Data
 I obtained the data from https://archive.ics.uci.edu/ml/datasets/census+income.  This data was oringally extracted from the 1994 census bureau database.  The data was originally donated to the UCI by Ronny Kohavi and Barry Becker, Data Mining and Visualization Silicon Graphics, e-mail: ronnyk@sgi.com for questions.  Extraction was done by Barry Becker from the 1994 Census database.
@@ -70,6 +78,7 @@ str(mjb)
 ```
 
 Distribution of the response variable.  We see this is a fairly unbalanced data set.
+
 ```{r echo=FALSE}
 
 mjb %>% 
@@ -89,10 +98,12 @@ mjb %>%
 
 ```
 
+\newpage
 ***
 ## Univariate Distribution
 ### Histograms
 Let's take a look at the numeric variables.  If we use AGE as a predictor we would likely center and normalize.
+
 ```{r echo=FALSE}
 
 h1 <- ggplot(mjb, aes(x = age)) + geom_histogram(binwidth = 1, fill = "#1380A1") + theme_economist_white()
@@ -104,7 +115,9 @@ h5 <- ggplot(mjb, aes(x = hours.per.week)) + geom_histogram(binwidth = 5, fill =
 grid.arrange(h1, h2, h3, h4, h5)
 
 ```
+
 Next we look at the categorical data.
+
 ```{r echo=FALSE}
 
 h1 <- ggplot(mjb, aes(x = workclass)) + geom_bar(fill = "#1380A1") + coord_flip() + theme_economist_white()
@@ -127,6 +140,7 @@ rm(h1, h2, h3, h4, h5, h6, h7, h8, h9)
 ```
 
 We remove those observations with an unknown value.  We could have imputed the values, perhaps considering the distribution of known values.  We did not because the original authors removed the data.
+
 ```{r echo=FALSE}
 
 mjb <- mjb %>% 
@@ -136,11 +150,13 @@ mjb <- mjb %>%
 
 ```
 
+\newpage
 ***
 ## Bivariate
 ### Response and predictor relationships
 #### Continuous Predictors
 We see that age can predict low salary for young adults.
+
 ```{r echo=FALSE}
 
 p2 <- mjb %>% 
@@ -167,7 +183,7 @@ rm(p2, p3)
 
 ```
 
-It appears that Capital Gain can also help predict salary.  Capital Loss is not as helpful.
+
 ```{r echo=FALSE}
 
 mjb %>% 
@@ -181,6 +197,7 @@ mjb %>%
 
 ```
 
+It appears that Capital Gain can also help predict salary.  Capital Loss is not as helpful.
 
 ```{r echo=FALSE}
 
@@ -209,9 +226,11 @@ mjb %>%
 
 ```
 
+\newpage
 ***
 #### Categorical Predictors
 Looking at the categorical predictors we see several that appear useful. We will want to verify our intuition by considering independence using a Chi-Square test.
+
 ```{r echo=FALSE}
 
 mjb %>% 
@@ -356,9 +375,12 @@ mjb %>%
 
 ```
 
+\newpage
+We apply a Chi-Square test for independence for each variable against `salary`.  We calculate the Cramer's V value for each variable against `salary`.  We see that `workclass`, `occupation`, and `native.country` do not get a valid Cramer's V value since they fail to produce a correct Chi-Square test.
 
+Those variables that are important to predicting salary are `education`, `marital.status`, `relationship`, and `sex`.  If we run into model performance constraints we can reduce the categorical predictors to these.  
 
-```{r echo=FALSE}
+```{r echo=FALSE, results=FALSE, warning=FALSE, message=FALSE}
 
 library(DescTools)
 library(ggplot2)
@@ -392,15 +414,11 @@ df <- mjb %>% select_if(is.factor)
 m <- PairApply(df, FUN = CramerV)
 
 corrplot::corrplot(m, type = "lower", is.corr = FALSE, method = "shade",
-                   addCoef.col = "black", diag = FALSE, cl.pos = "n", tl.srt = 30,
-                   title = "Cramers V")
+                   addCoef.col = "black", diag = FALSE, cl.pos = "n", tl.cex = 1, tl.srt = 30)
 
 
 ```
 
-We apply a Chi-Square test for independence for each variable with `salary`.  We calculate the Cramer's V value for each variable against `salary`.  We see that `workclass`, `occupation`, and `native.country` do not get a valid Cramer's V value since they fail to produce a correct Chi-Square test.
-
-Those variable that are important to predicting salary are `education`, `marital.status`, `relationship`, and `sex`.  If we run into model performance constraints we can reduce the categorical predictors to these.  
 
 
 
