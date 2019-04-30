@@ -64,7 +64,6 @@ test_index <- createDataPartition(y = mjb$salary, times = 1, p = 0.1, list = FAL
 train_set <- mjb[-test_index,]
 test_set <- mjb[test_index,]
 
-
 ```
 
 
@@ -84,7 +83,8 @@ fit_rf <- train(salary ~ .,
              method = "ranger",
              trControl = control,
              data = train_set,
-             importance = 'impurity')
+             importance = 'impurity', 
+             preProcess = c("center","scale"))
 
 varImp(fit_rf)
 
@@ -96,6 +96,8 @@ stopCluster(cl)
 Naive-Bayes model.
 ```{r}
 
+set.seed(1)
+
 # setup for parallel processing 
 cores <- detectCores()
 cl <- makePSOCKcluster(cores-1)
@@ -106,9 +108,10 @@ start_nb <- Sys.time()
 control <- trainControl(method = "cv", number = 10, p = .9)
 
 fit_nb <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,
-                  method = "nb", 
-                  trControl = control,
-                  data = train_set)
+                method = "nb", 
+                trControl = control,
+                data = train_set,
+                preProcess = c("center","scale"))
 
 preds <- predict(fit_nb, test_set)
 
@@ -124,6 +127,8 @@ stopCluster(cl)
 Extreme Gradient Boosting Tree model.  The original work used a NBTree model - a tree based model using Naive-Bayes for the leaves.  I don't have access to that model so I used XGBTree instead.
 ```{r}
 
+set.seed(1)
+
 # setup for parallel processing 
 cores <- detectCores()
 cl <- makePSOCKcluster(cores-1)
@@ -133,15 +138,12 @@ start_xgb <- Sys.time()
 
 control <- trainControl(method = "cv", number = 10, p = .9)
 
-grid <- expand.grid(nrounds = 379, max_depth = 9, eta = 0.1601659, gamma = 6.955552, 
-                    colsample_bytree = 0.5640455, min_child_weight = 0, subsample = 0.9083501)
-
 fit_xgb <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,  
                 method = "xgbTree", 
                 trControl = control,
-#                tuneGrid = grid,
                 data = train_set,
-                allowParallel = TRUE)
+                allowParallel = TRUE, 
+                preProcess = c("center","scale"))
 
 preds <- predict(fit_xgb, test_set)
 
@@ -158,6 +160,8 @@ stopCluster(cl)
 C5 model.  The original work used the C4.5 model.  I used the improved model - C5.  C5 is faster and uses much less memory than C4.5.  It also includes boosting.
 ```{r}
 
+set.seed(1)
+
 # setup for parallel processing 
 cores <- detectCores()
 cl <- makePSOCKcluster(cores-1)
@@ -170,7 +174,8 @@ control <- trainControl(method = "cv", number = 10, p = .9)
 fit_c5 <- train(salary ~ age + capital.gain + hours.per.week + marital.status + relationship + education.num + race + sex,  
              method = "C5.0", 
              trControl = control,
-             data = train_set)
+             data = train_set, 
+             preProcess = c("center","scale"))
 
 preds <- predict(fit_c5, test_set)
 
@@ -187,19 +192,25 @@ stopCluster(cl)
 
 # final predictions and accuracy using the validation set
 
-
+# Naive-Bayes
 preds <- predict(fit_nb, validation_set)
 dat <- data.frame(obs = validation_set$salary, pred = preds)
 cm <- confusionMatrix(dat$pred, dat$obs)
 results <- data_frame(method = "Naive-Bayes", accuracy = cm$overall["Accuracy"])
 
+
+# xgbTree
 preds <- predict(fit_xgb, validation_set)
 dat <- data.frame(obs = validation_set$salary, pred = preds)
 cm <- confusionMatrix(dat$pred, dat$obs)
 results <- bind_rows(results, 
                      data_frame(method = "xgbTree", accuracy = cm$overall["Accuracy"]))
 
-@results <- bind_rows(results, 
+# C5
+preds <- predict(fit_c5, validation_set)
+dat <- data.frame(obs = validation_set$salary, pred = preds)
+cm <- confusionMatrix(dat$pred, dat$obs)
+results <- bind_rows(results, 
                      data_frame(method = "C5", accuracy = cm$overall["Accuracy"]))
 
 results

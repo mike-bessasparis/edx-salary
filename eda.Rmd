@@ -52,9 +52,9 @@ The original project used accuracy as evaluation function and so did I.  One mod
 
 | Original Model | Accuracy | My Model | Accuracy |
 |-------|----------|--------|----------|
-| NBTree | 0.8590 | xgbTree | 0.8526 |
-| C4.5  | 0.8446 | C5 | 0.8486 |
-| Naive-Bayes | 0.8388 | Naive-Bayes | 0.8092 |
+| NBTree | 0.8590 | xgbTree | 0.8509 |
+| C4.5  | 0.8446 | C5 | 0.8465 |
+| Naive-Bayes | 0.8388 | Naive-Bayes | 0.8208 |
 
 
 ## Conclusion
